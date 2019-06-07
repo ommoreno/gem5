@@ -159,3 +159,22 @@ class LTAGE(TAGE):
     # Add a direction bit to the loop table entries
     useDirectionBit = Param.Bool(False, "Use direction info")
 
+class GShareBP(BranchPredictor):
+    type = 'GShareBP'
+    cxx_class = 'GShareBP'
+    cxx_header = "cpu/pred/gshare.hh"
+    PHTCtrBits = Param.Unsigned('2', "Size of counter bits")
+    PHTPredictorSize = Param.Unsigned('16384', "Size of local predictor")
+    globalPredictorSize = Param.Unsigned('14', "Size of global history bits")
+
+class GShare8KBP(GShareBP):
+    PHTCtrBits = Param.Unsigned('2', "Size of counter bits")
+    PHTPredictorSize = Param.Unsigned('4096', "Size of local predictor")
+    globalPredictorSize = Param.Unsigned('12', "Size of global history bits")
+
+class GShare32KBP(GShareBP):
+    PHTCtrBits = Param.Unsigned('2', "Size of counter bits")
+    PHTPredictorSize = Param.Unsigned('16384', "Size of local predictor")
+    globalPredictorSize = Param.Unsigned('14', "Size of global history bits")
+
+
