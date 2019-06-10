@@ -44,6 +44,8 @@
 
 #include "base/bitfield.hh"
 #include "base/intmath.hh"
+#include "base/logging.hh"
+#include "base/trace.hh"
 #include "debug/GSHARE.hh"
 
 GShareBP::GShareBP(const GShareBPParams *params)
@@ -61,14 +63,15 @@ GShareBP::GShareBP(const GShareBPParams *params)
 //        fatal("Invalid gShare predictor table size!\n");
 //    }
 
-    DPRINTF(GSHARE, "In constructor");
-
     PHTCtrs.resize(PHTPredictorSize);
     for (int i = 0; i < PHTPredictorSize; ++i)        
             PHTCtrs[i].setBits(PHTCtrBits);
 
     historyRegisterMask = mask(globalHistoryBits);
     gShareMask = PHTPredictorSize - 1;
+
+    DPRINTF(GSHARE, "GShareBP(): historyRegisterMask: %#x\n", historyRegisterMask);
+    DPRINTF(GSHARE, "GShareBP(): gShareMask: %#x\n", gShareMask);
 
     // Check that predictors don't use more bits than they have available
     if (gShareMask > historyRegisterMask) {
@@ -83,12 +86,14 @@ GShareBP::GShareBP(const GShareBPParams *params)
     // Set thresholds for predictor's counters
     // This is equivalent to (2^(Ctr))/2 - 1
     gShareThreshold = (ULL(1) << (PHTCtrBits  - 1)) - 1;
+    DPRINTF(GSHARE, "GShareBP(): gShareThreshold: %#x\n", gShareThreshold);
 }
 
 inline
 unsigned
 GShareBP::calcGShareIdx(Addr &branch_addr, ThreadID tid)
 {
+    DPRINTF(GSHARE, "calcGShareIdx(addr=%#x,tid=%i): globalHistory[tid]: %#x XOR branch_addr: %#x\n", branch_addr, tid, globalHistory[tid], ((branch_addr >> instShiftAmt) & gShareMask));
     // Get low order bits after removing instruction offset. XOR addr with branch history 
     return ((branch_addr >> instShiftAmt) & gShareMask) ^ (globalHistory[tid] & historyRegisterMask);
 }
@@ -99,6 +104,7 @@ GShareBP::updateGlobalHistTaken(ThreadID tid)
 {
     globalHistory[tid] = (globalHistory[tid] << 1) | 1;
     globalHistory[tid] = globalHistory[tid] & historyRegisterMask;
+    DPRINTF(GSHARE, "updateGlobalHistTaken(tid=%i): globalHistory[tid]: %#x\n", tid, globalHistory[tid]);
 }
 
 inline
@@ -107,17 +113,21 @@ GShareBP::updateGlobalHistNotTaken(ThreadID tid)
 {
     globalHistory[tid] = (globalHistory[tid] << 1);
     globalHistory[tid] = globalHistory[tid] & historyRegisterMask;
+    DPRINTF(GSHARE, "updateGlobalHistNotTaken(tid=%i): globalHistory[tid]: %#x\n", tid, globalHistory[tid]);
 }
 
 void
 GShareBP::btbUpdate(ThreadID tid, Addr branch_addr, void * &bp_history)
-{
+{ 
     unsigned gshare_idx = calcGShareIdx(branch_addr, tid);
+    DPRINTF(GSHARE, "btbUpdate(tid=%i,addr=%#x): gshare_idx: %#x\n", tid, branch_addr, gshare_idx);
     //Update Global History to Not Taken (clear LSB)
     globalHistory[tid] &= (historyRegisterMask & ~ULL(1));
+    DPRINTF(GSHARE, "btbUpdate(tid=%i,addr=%#x): globalHistory[tid]: %#x\n", tid, branch_addr, globalHistory[tid]);
     //Update Gshare table to Not Taken
     PHTCtrs[gshare_idx] =
        PHTCtrs[gshare_idx].read() & (gShareMask & ~ULL(1));
+    DPRINTF(GSHARE, "btbUpdate(tid=%i,addr=%#x): PHTCtrs[gshare_idx]: %#x\n", tid, branch_addr, PHTCtrs[gshare_idx].read());
 }
 
 bool
@@ -126,9 +136,8 @@ GShareBP::lookup(ThreadID tid, Addr branch_addr, void * &bp_history)
     unsigned gshare_idx;
     bool gshare_prediction;
 
-    DPRINTF(GSHARE, "In lookup");
-
     gshare_idx = calcGShareIdx(branch_addr, tid);
+
     gshare_prediction = PHTCtrs[gshare_idx].read() > gShareThreshold;
     
     // Create BPHistory and pass it back to be recorded.
@@ -155,7 +164,7 @@ GShareBP::uncondBranch(ThreadID tid, Addr pc, void * &bp_history)
     history->globalHistory = globalHistory[tid];
     history->gShareIdx = invalidPredictorIndex;
     bp_history = static_cast<void *>(history);
-
+    DPRINTF(GSHARE, "uncondBranch(tid=%i,addr=%#x): gShareIdx: %i\n", tid, pc, history->gShareIdx);
     updateGlobalHistTaken(tid);
 }
 
@@ -163,22 +172,29 @@ void
 GShareBP::update(ThreadID tid, Addr branch_addr, bool taken,
                      void *bp_history, bool squashed)
 {
+    DPRINTF(GSHARE, "update(tid=%i,addr=%#x,taken=%s,squashed=%s): In update\n", tid, branch_addr, taken, squashed);
     assert(bp_history);
     BPHistory *history = static_cast<BPHistory *>(bp_history);
+
+    unsigned gShare_predictor_idx = history->gShareIdx;
+
+    // Unconditional branches do not use local history.
+    bool old_pred_valid = gShare_predictor_idx != invalidPredictorIndex;
 
     if (squashed) {
         globalHistory[tid] = (history->globalHistory << 1) | taken;
         globalHistory[tid] &= historyRegisterMask;
-        return;
+    return;
     }
 
-    unsigned gShare_predictor_idx = history->gShareIdx;
-    if (taken) {
-        PHTCtrs[gShare_predictor_idx].increment();
-    } else {
-        PHTCtrs[gShare_predictor_idx].decrement();
+    if (old_pred_valid) {
+    DPRINTF(GSHARE, "update(tid=%i,addr=%#x,taken=%s,squashed=%s): PHTCtrs[%#x]: %i\n", tid, branch_addr, taken, squashed, gShare_predictor_idx, PHTCtrs[gShare_predictor_idx].read());
+        if (taken) {
+            PHTCtrs[gShare_predictor_idx].increment();
+        } else {
+            PHTCtrs[gShare_predictor_idx].decrement();
+        }
     }
-
     // We're done with this history, now delete it.
     delete history;
 }
