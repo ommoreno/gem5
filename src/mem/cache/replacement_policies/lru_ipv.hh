@@ -46,13 +46,25 @@ struct LRUIPVParams;
 class LRUIPV : public BaseReplacementPolicy
 {
   private:
-    typedef std::vector<int> LRUIPV;
+    /** 
+     * Values in IPV indicate which position to go to after a hit.
+     * i.e., The replacement data at node 15 gets moved to node 11 after a hit.
+     * If the position of a replacement data is not 0-15, then it is invalid.
+     * The last value indicates which node to use for data that is inserted.
+     */
+    std::vector<int> lruIPV{0, 0, 1, 0, 3, 0, 1, 2, 1, 0, 5, 1, 0, 0, 1, 11, 13};
 
   protected:
     /** LRUIPV-specific implementation of replacement data. */
     struct LRUIPVReplData : ReplacementData
     {
+        /** Position in IPV */
+        int position;
 
+        /**
+         * Default constructor. Invalidate data.
+         */
+        LRUIPVReplData() : position(16) {}
     };
 
   public:
@@ -71,7 +83,7 @@ class LRUIPV : public BaseReplacementPolicy
 
     /**
      * Invalidate replacement data to set it as the next probable victim.
-     * Increment its position on the vector.
+     * Set its position to 16 on the vector.
      *
      * @param replacement_data Replacement data to be invalidated.
      */
