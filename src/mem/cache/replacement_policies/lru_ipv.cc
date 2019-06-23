@@ -77,7 +77,7 @@ LRUIPV::getVictim(const ReplacementCandidates& candidates) const
     assert(candidates.size() > 0);
 
     for (const auto& candidate : candidates) {
-        if (std::static_pointer_cast<LRUIPVReplData>(replacement_data)->position == 16) {
+        if (std::static_pointer_cast<LRUIPVReplData>(candidate->replacement_data)->position == 16) {
             victim = candidate;
         }
     }
