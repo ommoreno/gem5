@@ -46,7 +46,9 @@ LRUIPV::invalidate(const std::shared_ptr<ReplacementData>& replacement_data)
 const
 {
 	DPRINTF(LRUDEBUG, "Inside Invalidate\n");
+
     std::static_pointer_cast<LRUIPVReplData>(replacement_data)->position = 16;
+
     DPRINTF(LRUDEBUG, "Exiting Invalidate\n");
 }
 
@@ -67,6 +69,7 @@ LRUIPV::touch(const std::shared_ptr<ReplacementData>& replacement_data) const
     }
 
     entries.insert(entries.begin() + newPosition, replEntry);
+    entries.pop_back();
 
     DPRINTF(LRUDEBUG, "Exiting touch\n");
 }
@@ -101,12 +104,14 @@ LRUIPV::getVictim(const ReplacementCandidates& candidates) const
     // There must be at least one replacement candidate
     assert(candidates.size() > 0);
 
+    ReplaceableEntry* victim = candidates[0];
     for (const auto& candidate : candidates) {
-        if (std::static_pointer_cast<LRUIPVReplData>(candidate->replacement_data)->position == 16) {
+        if (std::static_pointer_cast<LRUIPVReplData>(candidate->replacement_data)->position > 15) {
             victim = candidate;
         }
     }
 
+    entries.erase(entries.begin() + std::static_pointer_cast<LRUIPVReplData>(victim)->position);
     DPRINTF(LRUDEBUG, "Exiting getVictim\n");
     return victim;
 }
