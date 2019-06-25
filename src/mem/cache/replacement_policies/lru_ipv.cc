@@ -58,18 +58,15 @@ LRUIPV::touch(const std::shared_ptr<ReplacementData>& replacement_data) const
 	DPRINTF(LRUDEBUG, "Inside touch\n");
 
     std::shared_ptr<LRUIPVReplData> replEntry = std::static_pointer_cast<LRUIPVReplData>(replacement_data);
-    entries.erase(entries.begin() + replEntry->position);
-
     int newPosition = lruIPV[replEntry->position];
-    replEntry->position = newPosition;
 
-    // Push entries right of the touched element down the vector. This will invalidate the last element
-    for(int i = newPosition+1; i < entries.size(); i++) {
-        std::static_pointer_cast<LRUIPVReplData>(entries[i])->position += 1;
+    for (const auto& entry : entries) {
+        if (std::static_pointer_cast<LRUIPVReplData>(entry)->position >= newPosition) {
+            std::static_pointer_cast<LRUIPVReplData>(entry)->position += 1;
+        }
     }
 
-    entries.insert(entries.begin() + newPosition, replEntry);
-    entries.pop_back();
+    replEntry->position = newPosition;
 
     DPRINTF(LRUDEBUG, "Exiting touch\n");
 }
@@ -81,18 +78,17 @@ LRUIPV::reset(const std::shared_ptr<ReplacementData>& replacement_data) const
 
     insertionPoint = lruIPV.back();
     // Push entries down the vector from 13 to 15. This will invalidate the last element
-    for(int i = insertionPoint; i < entries.size(); i++) {
-        std::static_pointer_cast<LRUIPVReplData>(entries[i])->position += 1;
+    for (const auto& entry : entries) {
+        if (std::static_pointer_cast<LRUIPVReplData>(entry)->position >= insertionPoint) {
+            std::static_pointer_cast<LRUIPVReplData>(entry)->position += 1;
+        }
     }
 
     // Insert entry into defined position, i.e. 13
     std::shared_ptr<LRUIPVReplData> newEntry = std::static_pointer_cast<LRUIPVReplData>(replacement_data);
     newEntry->position = insertionPoint;
 
-    entries.insert(entries.begin() + insertionPoint, newEntry);
-
-    // Remove the invalidated entry
-    entries.pop_back();
+    entries.insert(entries.begin(), newEntry);
 
     DPRINTF(LRUDEBUG, "Exiting reset\n");
 }
@@ -111,7 +107,6 @@ LRUIPV::getVictim(const ReplacementCandidates& candidates) const
         }
     }
 
-    entries.erase(entries.begin() + std::static_pointer_cast<LRUIPVReplData>(victim)->position);
     DPRINTF(LRUDEBUG, "Exiting getVictim\n");
     return victim;
 }
