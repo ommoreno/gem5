@@ -36,13 +36,13 @@
 #include "params/LRUIPV.hh"
 #include "debug/LRUDEBUG.hh"
 
-LRUIPV::LRUIPV(const Params *p)
+LRUIPVRP::LRUIPVRP(const Params *p)
     : BaseReplacementPolicy(p)
 {
 }
 
 void
-LRUIPV::invalidate(const std::shared_ptr<ReplacementData>& replacement_data)
+LRUIPVRP::invalidate(const std::shared_ptr<ReplacementData>& replacement_data)
 const
 {
 	DPRINTF(LRUDEBUG, "Inside Invalidate\n");
@@ -53,7 +53,7 @@ const
 }
 
 void
-LRUIPV::touch(const std::shared_ptr<ReplacementData>& replacement_data) const
+LRUIPVRP::touch(const std::shared_ptr<ReplacementData>& replacement_data) const
 {
 	DPRINTF(LRUDEBUG, "Inside touch\n");
 
@@ -72,7 +72,7 @@ LRUIPV::touch(const std::shared_ptr<ReplacementData>& replacement_data) const
 }
 
 void
-LRUIPV::reset(const std::shared_ptr<ReplacementData>& replacement_data) const
+LRUIPVRP::reset(const std::shared_ptr<ReplacementData>& replacement_data) const
 {
 	DPRINTF(LRUDEBUG, "Inside reset\n");
 
@@ -94,7 +94,7 @@ LRUIPV::reset(const std::shared_ptr<ReplacementData>& replacement_data) const
 }
 
 ReplaceableEntry*
-LRUIPV::getVictim(const ReplacementCandidates& candidates) const
+LRUIPVRP::getVictim(const ReplacementCandidates& candidates) const
 {
     DPRINTF(LRUDEBUG, "Inside getVictim\n");
     // There must be at least one replacement candidate
@@ -117,14 +117,14 @@ LRUIPV::getVictim(const ReplacementCandidates& candidates) const
 }
 
 std::shared_ptr<ReplacementData>
-LRUIPV::instantiateEntry()
+LRUIPVRP::instantiateEntry()
 {
     return std::shared_ptr<ReplacementData>(new LRUIPVReplData());
 }
 
-LRUIPV*
+LRUIPVRP*
 LRUIPVParams::create()
 {
-    return new LRUIPV
+    return new LRUIPVRP
 (this);
 }

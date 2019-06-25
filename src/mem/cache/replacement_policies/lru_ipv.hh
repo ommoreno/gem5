@@ -43,7 +43,7 @@
 
 struct LRUIPVParams;
 
-class LRUIPV : public BaseReplacementPolicy
+class LRUIPVRP : public BaseReplacementPolicy
 {
   protected:
     /** LRUIPV-specific implementation of replacement data. */
@@ -80,12 +80,12 @@ class LRUIPV : public BaseReplacementPolicy
     /**
      * Construct and initiliaze this replacement policy.
      */
-    LRUIPV(const Params *p);
+    LRUIPVRP(const Params *p);
 
     /**
      * Destructor.
      */
-    ~LRUIPV() {}
+    ~LRUIPVRP() {}
 
     /**
      * Invalidate replacement data to set it as the next probable victim.
