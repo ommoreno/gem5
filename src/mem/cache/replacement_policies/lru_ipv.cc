@@ -88,7 +88,7 @@ LRUIPV::reset(const std::shared_ptr<ReplacementData>& replacement_data) const
     std::shared_ptr<LRUIPVReplData> newEntry = std::static_pointer_cast<LRUIPVReplData>(replacement_data);
     newEntry->position = insertionPoint;
 
-    entries.insert(entries.begin(), newEntry);
+    entries.push_back(newEntry);
 
     DPRINTF(LRUDEBUG, "Exiting reset\n");
 }
@@ -101,11 +101,16 @@ LRUIPV::getVictim(const ReplacementCandidates& candidates) const
     assert(candidates.size() > 0);
 
     ReplaceableEntry* victim = candidates[0];
+    int victimIndex = -1;
     for (const auto& candidate : candidates) {
         if (std::static_pointer_cast<LRUIPVReplData>(candidate->replacement_data)->position > 15) {
             victim = candidate;
         }
+        victimIndex++;
     }
+
+    assert(victimIndex > -1);
+    entries.erase(entries.begin() + victimIndex);
 
     DPRINTF(LRUDEBUG, "Exiting getVictim\n");
     return victim;
