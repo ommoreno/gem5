@@ -60,7 +60,7 @@ LRUIPV::touch(const std::shared_ptr<ReplacementData>& replacement_data) const
     std::shared_ptr<LRUIPVReplData> replEntry = std::static_pointer_cast<LRUIPVReplData>(replacement_data);
     int newPosition = lruIPV[replEntry->position];
 
-    for (const auto& entry : entries) {
+    for (auto& entry : entries) {
         if (std::static_pointer_cast<LRUIPVReplData>(entry)->position >= newPosition) {
             std::static_pointer_cast<LRUIPVReplData>(entry)->position += 1;
         }
@@ -78,7 +78,7 @@ LRUIPV::reset(const std::shared_ptr<ReplacementData>& replacement_data) const
 
     insertionPoint = lruIPV.back();
     // Push entries down the vector from 13 to 15. This will invalidate the last element
-    for (const auto& entry : entries) {
+    for (auto& entry : entries) {
         if (std::static_pointer_cast<LRUIPVReplData>(entry)->position >= insertionPoint) {
             std::static_pointer_cast<LRUIPVReplData>(entry)->position += 1;
         }
